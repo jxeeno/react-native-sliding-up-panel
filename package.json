@@ -16,8 +16,8 @@
     "sliding-up-panel"
   ],
   "peerDependencies": {
-    "react": "15.3.2",
-    "react-native": "^0.34.1"
+    "react": "^16.0.0-beta.5",
+    "react-native": "^0.44.1"
   },
   "author": "Niña Manalo <nina.manalo19@gmail.com>",
   "license": {
