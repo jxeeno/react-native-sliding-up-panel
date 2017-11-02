@@ -4,45 +4,46 @@
 * Niña Manalo
 * https://github.com/ninamanalo/
 * nina.manalo19@gmail.com
+*
+* Modified by Kenneth Tsang (jxeeno)
+* Adds ES6, non-restrictive pan and snaps at top
 */
 
 'use strict';
 
 import React, { Component } from 'react';
-import { View, PanResponder,  Text, AppRegistry, Image, Dimensions} from 'react-native';
+import ReactNative, { View, PanResponder,  Text, AppRegistry, Image, Dimensions} from 'react-native';
 
 var deviceWidth = Dimensions.get('window').width;
 var deviceHeight = Dimensions.get('window').height;
 
 var BASE_CONTAINER_HEIGHT = 40;
 
-var SlidingUpPanel = React.createClass({
+export default class SlidingUpPanel extends Component {
 
-  panResponder : {},
-  previousTop : -BASE_CONTAINER_HEIGHT,
-  mainContainerHeight : 0,
+  panResponder = {};
+  previousTop = -BASE_CONTAINER_HEIGHT;
+  mainContainerHeight = 0;
 
-  getInitialState: function() {
-    return {
-      handlerHeight : this.props.handlerHeight,
-      containerHeight : this.props.containerHeight,
-      containerMinimumHeight : this.props.handlerHeight,
-      containerMaximumHeight : this.props.containerMaximumHeight,
-      containerHalfHeight : 0,
-      containerBackgroundColor : this.props.containerBackgroundColor,
-      containerOpacity : this.props.containerOpacity,
+  state = {
+    handlerHeight : this.props.handlerHeight,
+    containerHeight : this.props.containerHeight,
+    containerMinimumHeight : this.props.handlerHeight,
+    containerMaximumHeight : this.props.containerMaximumHeight,
+    containerHalfHeight : 0,
+    containerBackgroundColor : this.props.containerBackgroundColor,
+    containerOpacity : this.props.containerOpacity,
 
-      handlerView : this.props.handlerDefaultView,
+    handlerView : this.props.handlerDefaultView,
 
-      handlerBackgroundColor : this.props.handlerBackgroundColor,
-      handlerOpacity : this.props.handlerOpacity,
-      allowStayMiddle : this.props.allowStayMiddle,
+    handlerBackgroundColor : this.props.handlerBackgroundColor,
+    handlerOpacity : this.props.handlerOpacity,
+    allowStayMiddle : this.props.allowStayMiddle,
 
-      middleList : false,
-    };
-  },
+    middleList : false,
+  };
 
-  componentDidMount: function() {
+  componentDidMount() {
     var containerMinimumHeight = this.state.containerMinimumHeight;
     var containerMaximumHeight = this.state.containerMaximumHeight;
     var containerHalfHeight = this.state.containerHalfHeight;
@@ -126,9 +127,13 @@ var SlidingUpPanel = React.createClass({
       });
     }
 
-  },
+  };
 
-  render: function() {
+  componentWillReceiveProps(props){
+    this.setState({handlerView: props.handlerDefaultView})
+  }
+
+  render() {
     return (
       <View
         style = {{
@@ -152,42 +157,42 @@ var SlidingUpPanel = React.createClass({
         {this.props.children}
       </View>
     );
-  },
+  };
 
-  reloadHeight:function(height) {
+  reloadHeight(height) {
     this.setState({
       containerHeight : height,
       middleList : false
     });
     this.mainContainerHeight = height;
-  },
+  };
 
-  collapsePanel:function() {
+  collapsePanel() {
     this.setState({
       containerHeight: this.state.containerMinimumHeight,
     });
-  },
+  };
 
-  componentWillMount: function() {
+  componentWillMount() {
     this.panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: this.handleStartShouldSetPanResponder,
-      onMoveShouldSetPanResponder: this.handleMoveShouldSetPanResponder,
-      onPanResponderMove: this.handlePanResponderMove,
-      onPanResponderRelease: this.handlePanResponderEnd,
-      onPanResponderTerminate: this.handlePanResponderEnd,
-      onPanResponderStart: this.handlePanResponderStart
+      onStartShouldSetPanResponder: this.handleStartShouldSetPanResponder.bind(this),
+      onMoveShouldSetPanResponder: this.handleMoveShouldSetPanResponder.bind(this),
+      onPanResponderMove: this.handlePanResponderMove.bind(this),
+      onPanResponderRelease: this.handlePanResponderEnd.bind(this),
+      onPanResponderTerminate: this.handlePanResponderEnd.bind(this),
+      onPanResponderStart: this.handlePanResponderStart.bind(this)
     });
-  },
+  };
 
-  handleStartShouldSetPanResponder: function(e: Object, gestureState: Object): boolean {
+  handleStartShouldSetPanResponder(e, gestureState) {
     return true;
-  },
+  };
 
-  handleMoveShouldSetPanResponder: function(e: Object, gestureState: Object): boolean {
+  handleMoveShouldSetPanResponder(e, gestureState) {
     return true;
-  },
+  };
 
-  handlePanResponderMove: function(e: Object, gestureState: Object) {
+  handlePanResponderMove(e, gestureState) {
     var dy = gestureState.dy;
     var y0 = gestureState.y0;
     var negativeY = -dy;
@@ -195,9 +200,9 @@ var SlidingUpPanel = React.createClass({
     var positionY = negativeY - this.previousTop;
 
     if (positionY >= this.state.containerMinimumHeight && positionY <= this.state.containerMaximumHeight) {
-      //console.log('handlePanResponderMove() -- middle=' + positionY);
-      var lessMiddle = this.state.containerHalfHeight - 35;
-      var moreMiddle = this.state.containerHalfHeight + 35;
+      // console.log('handlePanResponderMove() -- middle=' + positionY);
+      var lessMiddle = this.state.containerHalfHeight - 40;
+      var moreMiddle = this.state.containerHalfHeight + 40;
 
       if (positionY >= lessMiddle && positionY <= moreMiddle) {
 
@@ -212,18 +217,22 @@ var SlidingUpPanel = React.createClass({
           if (this.props.getContainerHeight != undefined) {
             this.props.getContainerHeight(this.state.containerHalfHeight);
           }
+
+          if (this.props.getContainerHeightEnd != undefined) {
+            this.props.getContainerHeightEnd(this.state.containerHalfHeight);
+          }
         }
 
       } else {
-        //console.log('handlePanResponderMove() -- NOT middle=' + positionY);
+        // console.log('handlePanResponderMove() -- NOT middle=' + positionY);
         this.handleMiddleFalse(positionY);
       }
 
       this.mainContainerHeight = this.state.containerHeight;
     }
-  },
+  };
 
-  handleMiddleFalse: function(positionY) {
+  handleMiddleFalse(positionY) {
     this.setState({
       containerHeight : positionY,
       middleList : false
@@ -231,9 +240,9 @@ var SlidingUpPanel = React.createClass({
     if (this.props.getContainerHeight != undefined) {
       this.props.getContainerHeight(positionY);
     }
-  },
+  };
 
-  handlePanResponderStart: function(e: Object, gestureState: Object) {
+  handlePanResponderStart (e, gestureState) {
     if(this.props.onStart) {
       this.props.onStart();
     }
@@ -245,67 +254,100 @@ var SlidingUpPanel = React.createClass({
       middleList : false
     });
 
-  },
+  };
 
-  handlePanResponderEnd: function(e: Object, gestureState: Object) {
-    if(this.props.onEnd) {
-      this.props.onEnd();
-    }
+  handlePanResponderEnd (e, gestureState) {
+    // if(this.props.onEnd) {
+    //   this.props.onEnd(this.state.containerHeight);
+    // }
 
-    var containerHeight = this.state.containerMaximumHeight;
-    var dy = gestureState.dy;
-    var y0 = gestureState.y0;
-
-    if (dy == 0) {
-      var newContainerHeight = this.state.containerHalfHeight;
-      var middleList = true;
-
-      if (this.state.containerHeight == this.state.containerHalfHeight || this.state.containerHeight == this.state.containerMaximumHeight) {
-        newContainerHeight = this.state.containerMinimumHeight;
-        middleList = false;
-      }
-
-      if (!this.state.allowStayMiddle) {
-        newContainerHeight = this.state.containerMinimumHeight;
-        middleList = false;
-      }
-
+    if(this.state.containerHeight < this.state.containerMinimumHeight + 60){
+      let containerHeight = this.state.containerMinimumHeight;
+      this.previousTop = -this.state.containerMinimumHeight;
       this.setState({
-        containerHeight : newContainerHeight,
-        middleList : middleList,
+        containerHeight : containerHeight,
       });
-
-      if (this.props.getContainerHeight != undefined) {
-        this.props.getContainerHeight(newContainerHeight);
+      if(this.props.onEnd) {
+        this.props.onEnd(containerHeight);
       }
-
-      this.mainContainerHeight = newContainerHeight;
-    } else {
-
-      if (dy < 0) {
-        containerHeight = this.state.containerMaximumHeight;
-        this.previousTop += dy;
-      } else {
-
-        containerHeight = this.state.containerMinimumHeight;
-        this.previousTop = -this.state.containerMinimumHeight;
+    }else if(this.state.containerHeight > this.state.containerMaximumHeight - 60){
+      let containerHeight = this.state.containerMaximumHeight;
+      this.previousTop += dy;
+      this.setState({
+        containerHeight : containerHeight,
+      });
+      if(this.props.onEnd) {
+        this.props.onEnd(containerHeight);
       }
-
-      if (!this.state.middleList) {
-        this.setState({
-          containerHeight : containerHeight,
-        });
-
-        if (this.props.getContainerHeight != undefined) {
-          this.props.getContainerHeight(containerHeight);
-        }
-      }
-
-      this.mainContainerHeight = containerHeight;
-
+    }else if(this.props.onEnd) {
+      this.props.onEnd(this.state.containerHeight);
     }
-  },
 
-});
+    return;
 
-module.exports = SlidingUpPanel;
+    // var containerHeight = this.state.containerMaximumHeight;
+    // var dy = gestureState.dy;
+    // var y0 = gestureState.y0;
+
+    // if (dy == 0) {
+    //   var newContainerHeight = this.state.containerHalfHeight;
+    //   var middleList = true;
+
+    //   if (this.state.containerHeight == this.state.containerHalfHeight || this.state.containerHeight == this.state.containerMaximumHeight) {
+    //     newContainerHeight = this.state.containerMinimumHeight;
+    //     middleList = false;
+    //   }
+
+    //   if (!this.state.allowStayMiddle) {
+    //     newContainerHeight = this.state.containerMinimumHeight;
+    //     middleList = false;
+    //   }
+
+    //   this.setState({
+    //     containerHeight : newContainerHeight,
+    //     middleList : middleList,
+    //   });
+
+    //   if (this.props.getContainerHeight != undefined) {
+    //     this.props.getContainerHeight(newContainerHeight);
+    //   }
+
+    //   if (this.props.getContainerHeightEnd != undefined) {
+    //     this.props.getContainerHeightEnd(newContainerHeight);
+    //   }
+
+    //   this.mainContainerHeight = newContainerHeight;
+    // } else {
+
+    //   if (dy < 0) {
+    //     containerHeight = this.state.containerMaximumHeight;
+    //     this.previousTop += dy;
+    //   } else {
+
+    //     containerHeight = this.state.containerMinimumHeight;
+    //     this.previousTop = -this.state.containerMinimumHeight;
+    //   }
+
+    //   if (!this.state.middleList) {
+    //     this.setState({
+    //       containerHeight : containerHeight,
+    //     });
+
+    //     if (this.props.getContainerHeight != undefined) {
+    //       this.props.getContainerHeight(containerHeight);
+    //     }
+
+    //     if (this.props.getContainerHeightEnd != undefined) {
+    //       this.props.getContainerHeightEnd(containerHeight);
+    //     }
+
+    //   }
+
+    //   this.mainContainerHeight = containerHeight;
+
+    // }
+  };
+
+};
+
+// module.exports = SlidingUpPanel;
