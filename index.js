@@ -12,12 +12,19 @@
 'use strict';
 
 import React, { Component } from 'react';
-import ReactNative, { View, PanResponder,  Text, AppRegistry, Image, Dimensions} from 'react-native';
+import ReactNative, { View, PanResponder,  Text, AppRegistry, Image, Dimensions, LayoutAnimation, UIManager} from 'react-native';
 
 var deviceWidth = Dimensions.get('window').width;
 var deviceHeight = Dimensions.get('window').height;
 
 var BASE_CONTAINER_HEIGHT = 40;
+
+const getDragThreshold = ({ moveX, moveY, dx, dy}) => {
+  const draggedDown = dy > 30;
+  const draggedUp = dy < -30;
+
+  return draggedUp || draggedDown;
+}
 
 export default class SlidingUpPanel extends Component {
 
@@ -25,10 +32,12 @@ export default class SlidingUpPanel extends Component {
   previousTop = -BASE_CONTAINER_HEIGHT;
   mainContainerHeight = 0;
 
+  swipeDetected = false;
+
   state = {
     handlerHeight : this.props.handlerHeight,
     containerHeight : this.props.containerHeight,
-    containerMinimumHeight : this.props.handlerHeight,
+    containerMinimumHeight : this.props.containerMinimumHeight || this.props.containerHeight,
     containerMaximumHeight : this.props.containerMaximumHeight,
     containerHalfHeight : 0,
     containerBackgroundColor : this.props.containerBackgroundColor,
@@ -94,10 +103,21 @@ export default class SlidingUpPanel extends Component {
       });
     }
     
-    this.mainContainerHeight = this.state.containerMinimumHeight
+    // this.mainContainerHeight = this.state.containerMinimumHeight
+    // this.setState({
+    //   containerHeight : this.mainContainerHeight
+    // });
+
+    // default to middle position
+
+    let containerHeight = parseInt((this.state.containerMaximumHeight - this.state.containerMinimumHeight)/2) + this.state.containerMinimumHeight;
     this.setState({
-      containerHeight : this.mainContainerHeight
+      containerHeight : containerHeight,
     });
+
+    if(this.props.onEnd) {
+      this.props.onEnd(containerHeight);
+    }
 
     if (containerBackgroundColor == undefined) {
       containerBackgroundColor = 'white'
@@ -185,11 +205,15 @@ export default class SlidingUpPanel extends Component {
   };
 
   handleStartShouldSetPanResponder(e, gestureState) {
+    // console.log('handleStartShouldSetPanResponder');
+    // console.log(gestureState);
+    // var dy = gestureState.dy;
+    // return (Math.abs(dy) > 40)
     return true;
   };
 
   handleMoveShouldSetPanResponder(e, gestureState) {
-    return true;
+    return !!getDragThreshold(gestureState);
   };
 
   handlePanResponderMove(e, gestureState) {
@@ -197,7 +221,15 @@ export default class SlidingUpPanel extends Component {
     var y0 = gestureState.y0;
     var negativeY = -dy;
 
+    var dyVelocity = gestureState.vy;
+
     var positionY = negativeY - this.previousTop;
+
+    // console.log(dy);
+    
+    // if(Math.abs(dy) < 10){
+    //   return null;
+    // }
 
     if (positionY >= this.state.containerMinimumHeight && positionY <= this.state.containerMaximumHeight) {
       // console.log('handlePanResponderMove() -- middle=' + positionY);
@@ -207,7 +239,7 @@ export default class SlidingUpPanel extends Component {
       if (positionY >= lessMiddle && positionY <= moreMiddle) {
 
         if (!this.state.allowStayMiddle) {
-          this.handleMiddleFalse(positionY);
+          this.handleMiddleFalse(positionY, dyVelocity);
         } else {
           this.setState({
             containerHeight : this.state.containerHalfHeight,
@@ -232,17 +264,45 @@ export default class SlidingUpPanel extends Component {
     }
   };
 
-  handleMiddleFalse(positionY) {
+  handleMiddleFalse(positionY, dyVelocity) {
+
+    if(dyVelocity > 1.5){
+      // snap t bottom
+      // LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+      // let containerHeight = this.state.containerMinimumHeight;
+      // this.previousTop = -this.state.containerMinimumHeight;
+      this.swipeDetected = true;
+      // this.setState({
+      //   containerHeight : containerHeight,
+      // });
+    }else if(dyVelocity < -1.5){
+      // LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+      // let containerHeight = this.state.containerMaximumHeight;
+      this.swipeDetected = true;
+      // this.setState({
+      //   containerHeight : containerHeight,
+      // });
+    }else{
+      // this.setState({
+      //   containerHeight : positionY,
+      //   middleList : false
+      // });
+    }
+
     this.setState({
       containerHeight : positionY,
       middleList : false
     });
+
     if (this.props.getContainerHeight != undefined) {
       this.props.getContainerHeight(positionY);
     }
   };
 
   handlePanResponderStart (e, gestureState) {
+    console.log("handle panResponderStart")
+    console.log(gestureState);
+
     if(this.props.onStart) {
       this.props.onStart();
     }
@@ -261,7 +321,14 @@ export default class SlidingUpPanel extends Component {
     //   this.props.onEnd(this.state.containerHeight);
     // }
 
-    if(this.state.containerHeight < this.state.containerMinimumHeight + 60){
+    var dy = gestureState.dy;
+    var dyVelocity = gestureState.vy;
+
+    // console.log("dyVelocity "+dyVelocity)
+
+    if((this.swipeDetected && dyVelocity > 0.04) || this.state.containerHeight < this.state.containerMinimumHeight + 100){
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+      // snap t bottom
       let containerHeight = this.state.containerMinimumHeight;
       this.previousTop = -this.state.containerMinimumHeight;
       this.setState({
@@ -270,7 +337,8 @@ export default class SlidingUpPanel extends Component {
       if(this.props.onEnd) {
         this.props.onEnd(containerHeight);
       }
-    }else if(this.state.containerHeight > this.state.containerMaximumHeight - 60){
+    }else if((this.swipeDetected && dyVelocity < -0.04) || this.state.containerHeight > this.state.containerMaximumHeight - 100){
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
       let containerHeight = this.state.containerMaximumHeight;
       this.previousTop += dy;
       this.setState({
@@ -282,6 +350,8 @@ export default class SlidingUpPanel extends Component {
     }else if(this.props.onEnd) {
       this.props.onEnd(this.state.containerHeight);
     }
+
+    this.swipeDetected = false;
 
     return;
 
